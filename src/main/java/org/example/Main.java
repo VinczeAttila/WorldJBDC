@@ -12,6 +12,8 @@ public class Main {
     }
     public void run() {
 
+
+
         Printer printer = new Printer();
         printer.printMenu();
         UserInput userInput = new UserInput();
