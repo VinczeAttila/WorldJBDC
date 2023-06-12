@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  db:
+    container_name: pg_container3
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: ak
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./init-db/city_utf8.csv:/docker-entrypoint-initdb.d/city_utf8.csv
+      - ./init-db/country_flag_utf8.csv:/docker-entrypoint-initdb.d/country_flag_utf8.csv
+      - ./init-db/country_language_utf8.csv:/docker-entrypoint-initdb.d/country_language_utf8.csv
+      - ./init-db/country_utf8.csv:/docker-entrypoint-initdb.d/country_utf8.csv
+      - ./init-db/init.sql:/docker-entrypoint-initdb.d/init.sql
