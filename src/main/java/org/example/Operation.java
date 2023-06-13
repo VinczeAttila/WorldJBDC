@@ -4,12 +4,15 @@ import java.sql.*;
 
 public class Operation {
 
-    UserInput userInput = new UserInput();
+    Connection connection;
+    UserInput userInput;
+    public Operation(Connection connection, UserInput userInput) {
+        this.connection = connection;
+        this.userInput = userInput;
+    }
 
     public void firstQueryCall() {
-
-        try (final Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");
-             final PreparedStatement preparedStatement = connection.prepareStatement("SELECT name, code from country ");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement("SELECT name, code from country ");
              PreparedStatement cityNamePreparedStatement = connection.prepareStatement("SELECT  c2.names, c2.population  from country c " +
                      "JOIN city c2 ON c.code = c2.country_code " +
                      "WHERE c.name  = ? " +
@@ -21,15 +24,15 @@ public class Operation {
                 System.out.printf("%s ,", rs.getString("Name"));
             }
             System.out.println();
-
             String country = userInput.chooseCountry();
-
             cityNamePreparedStatement.setString(1, country);
-            ResultSet resultSet = cityNamePreparedStatement.executeQuery();
-            while (resultSet.next()) {
-                System.out.printf("%30s %,12d%n",
-                        resultSet.getString("Names"), resultSet.getInt("Population"));
-            }
+           try (ResultSet resultSet = cityNamePreparedStatement.executeQuery();) {
+               while (resultSet.next()) {
+                   System.out.printf("%30s %,12d%n",
+                           resultSet.getString("Names"), resultSet.getInt("Population"));
+               }
+           }
+
         } catch (SQLException e) {
             System.out.println(e);
         }
@@ -38,8 +41,7 @@ public class Operation {
 
     public void secondQueryCall() {
 
-        try (final Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");
-             final PreparedStatement preparedStatement = connection.prepareStatement("SELECT DISTINCT continent from country ");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement("SELECT DISTINCT continent from country ");
              ResultSet resultSet = preparedStatement.executeQuery();
              PreparedStatement ContinentPreparedStatement = connection.prepareStatement("select distinct c.continent ,c.name , c2.names " +
                      "from country c " +
@@ -53,33 +55,32 @@ public class Operation {
             System.out.println();
             String continent = userInput.chooseContinent();
             ContinentPreparedStatement.setString(1, continent);
-            ResultSet resultSet1 = ContinentPreparedStatement.executeQuery();
-            while (resultSet1.next()) {
-                System.out.printf("%10s %30s %30s%n",
-                        resultSet1.getString("Continent"), resultSet1.getString(2), resultSet1.getString("names"));
+            try (ResultSet resultSet1 = ContinentPreparedStatement.executeQuery();) {
+                while (resultSet1.next()) {
+                    System.out.printf("%10s %30s %30s%n",
+                            resultSet1.getString("Continent"), resultSet1.getString(2), resultSet1.getString("names"));
+                }
             }
         } catch (SQLException e) {
             System.out.println(e);
         }
-
     }
 
     public void thirdQueryCall() {
         String city = userInput.chooseCity();
-        try (final Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");
-
-             final PreparedStatement preparedStatement = connection.prepareStatement("select c.names , c2.name , " +
-                     "round((c.population / c2.population :: numeric)*100, 3) as citypopulation , (c.id = c2.capital ) as capital from city c " +
-                     "join country c2 on c.country_code = c2.code " +
-                     "left join country c3 on c.id = c3.capital " +
-                     "where c.names = ? ");
+        try (final PreparedStatement preparedStatement = connection.prepareStatement("select c.names , c2.name , " +
+                "round((c.population / c2.population :: numeric)*100, 3) as citypopulation , (c.id = c2.capital ) as capital from city c " +
+                "join country c2 on c.country_code = c2.code " +
+                "left join country c3 on c.id = c3.capital " +
+                "where c.names = ? ");
         ) {
             preparedStatement.setString(1, city);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                System.out.printf("%10s %10s %5d %15s%n",
-                        resultSet.getString("Names"), resultSet.getString("Name"),
-                        resultSet.getInt("citypopulation"), resultSet.getBoolean("capital") ? "Főváros" : "nem Főváros");
+            try (ResultSet resultSet = preparedStatement.executeQuery();) {
+                while (resultSet.next()) {
+                    System.out.printf("%10s %10s %5d %15s%n",
+                            resultSet.getString("Names"), resultSet.getString("Name"),
+                            resultSet.getInt("citypopulation"), resultSet.getBoolean("capital") ? "Főváros" : "nem Főváros");
+                }
             }
 
         } catch (SQLException e) {
@@ -89,70 +90,64 @@ public class Operation {
 
     public void fourthQueryCall() {
         String language = userInput.chooseLanguage();
-        try (final Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");
-
-             PreparedStatement preparedStatement = connection.prepareStatement("select cl.language  ,c.name , round((( c.population * cl.percentage ):: numeric ),2) as number_of_language_speakers , is_official " +
+        try (PreparedStatement preparedStatement = connection.prepareStatement("select cl.language  ,c.name , round((( c.population * cl.percentage ):: numeric ),2) as number_of_language_speakers , is_official " +
                      "from country_language cl " +
                      "join country c on cl.country_code = c.code " +
                      "where language = ? " +
                      "order by is_official desc,  number_of_language_speakers desc ");
 
         ) {
-            preparedStatement.setString(1, language);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                System.out.printf("%20s %40s %,25d %25s %n", resultSet.getString("language"), resultSet.getString("name"),
-                        resultSet.getLong("number_of_language_speakers"),
-                        resultSet.getBoolean("is_official") ? "hivatalos nyelv" : "nem hivatalos nyelv");
-
+                preparedStatement.setString(1, language);
+                try (ResultSet resultSet = preparedStatement.executeQuery();){
+                while (resultSet.next()) {
+                    System.out.printf("%20s %40s %,25d %25s %n", resultSet.getString("language"), resultSet.getString("name"),
+                            resultSet.getLong("number_of_language_speakers"),
+                            resultSet.getBoolean("is_official") ? "hivatalos nyelv" : "nem hivatalos nyelv");
+                }
             }
-
         } catch (SQLException e) {
             System.out.println(e);
-
         }
-
     }
 
     public void fifthQueryCall() {
-    Integer number = userInput.chooseNumberOfLanguageSpeaker();
-        try (final Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");
-             PreparedStatement preparedStatement = connection.prepareStatement("select * from (select cl.language, count(c.name)  as number_of_countries " +
+        Integer number = userInput.chooseNumberOfLanguageSpeaker();
+        try (PreparedStatement preparedStatement = connection.prepareStatement("select * from (select cl.language, count(c.name)  as number_of_countries " +
                      " ,round ((sum(c.population * cl.percentage / 100):: numeric ), 0) as number_of_language_speaker" +
                      " from country_language cl join country c on cl.country_code = c.code group by cl.language) number_of_speaker " +
                      " where number_of_language_speaker > ? order by number_of_language_speaker desc");
         ) {
             preparedStatement.setInt(1, number);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                System.out.printf("%20s %40d %,25d %n", resultSet.getString("language"), resultSet.getInt("number_of_countries"),
-                        resultSet.getInt("number_of_language_speaker"));
+            try (ResultSet resultSet = preparedStatement.executeQuery();) {
+                while (resultSet.next()) {
+                    System.out.printf("%20s %40d %,25d %n", resultSet.getString("language"), resultSet.getInt("number_of_countries"),
+                            resultSet.getInt("number_of_language_speaker"));
 
+                }
             }
         } catch (SQLException e) {
             System.out.println(e);
         }
     }
 
-    public void sixthQueryCall (){
-        try (final Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");
-             PreparedStatement preparedStatement = connection.prepareStatement("select continent  , avg(gnp/population) as gnp_per_population from country c " +
-                             "where population > 0 " +
-                             "group by continent " +
-                     "order by gnp_per_population desc" );
+    public void sixthQueryCall() {
+        try (PreparedStatement preparedStatement = connection.prepareStatement("select continent  , avg(gnp/population) as gnp_per_population from country c " +
+                     "where population > 0 " +
+                     "group by continent " +
+                     "order by gnp_per_population desc");
 
         ) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            double sum_gnp = 0;
-            int numberOfGnp = 0;
+            try (ResultSet resultSet = preparedStatement.executeQuery();) {
+                double sum_gnp = 0;
+                int numberOfGnp = 0;
 
-            while (resultSet.next()) {
-                System.out.printf("%20s %20f %n", resultSet.getString("continent"), resultSet.getDouble("gnp_per_population"));
-                numberOfGnp++;
-                sum_gnp +=  resultSet.getDouble("gnp_per_population");
+                while (resultSet.next()) {
+                    System.out.printf("%20s %20f %n", resultSet.getString("continent"), resultSet.getDouble("gnp_per_population"));
+                    numberOfGnp++;
+                    sum_gnp += resultSet.getDouble("gnp_per_population");
+                }
+                System.out.printf("Az átlagos gnp: %f%n", sum_gnp / numberOfGnp);
             }
-            System.out.printf("Az átlagos gnp: %f%n", sum_gnp / numberOfGnp );
-
         } catch (SQLException e) {
             System.out.println(e);
         }
