@@ -10,25 +10,40 @@ public class Main {
 
         new Main().run();
     }
+
     public void run() {
 
         Printer printer = new Printer();
         printer.printMenu();
         UserInput userInput = new UserInput();
-        Operation operation = new Operation();
         int userChoice = userInput.chooseMainMenu();
-        if (userChoice == 1) {
-        operation.firstQueryCall();
-        } else if (userChoice == 2){
-            operation.secondQueryCall();
-        }else if (userChoice == 3){
-            operation.thirdQueryCall();
-        }else if (userChoice == 4){
-            operation.fourthQueryCall();
-        }else if (userChoice == 5){
-            operation.fifthQueryCall();
-        }else if (userChoice == 6){
-            operation.sixthQueryCall();
+        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5436/ak", "root", "root");) {
+            Operation operation = new Operation(connection, userInput);
+
+            switch (userChoice) {
+                case 1 -> {
+                    operation.firstQueryCall();
+                }
+                case 2 -> {
+                    operation.secondQueryCall();
+                }
+                case 3 -> {
+                    operation.thirdQueryCall();
+                }
+                case 4 -> {
+                    operation.fourthQueryCall();
+                }
+                case 5 -> {
+                    operation.fifthQueryCall();
+                }
+                case 6 -> {
+                    operation.sixthQueryCall();
+
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println(e);
         }
     }
 }
